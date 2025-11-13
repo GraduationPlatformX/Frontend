@@ -1,60 +1,56 @@
-import { useState, useEffect } from 'react';
-import { Bell, MessageSquare, UserPlus, FileText, Calendar, Users } from 'lucide-react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Card } from './ui/card';
-import { useAuth } from '../contexts/AuthContext';
-import { getNotifications, STORAGE_KEYS } from '../services/mockData';
-import { Notification } from '../types';
-import { formatRelativeTime } from '../lib/utils';
+import { useEffect, useState } from "react";
+import {
+  Bell,
+  MessageSquare,
+  UserPlus,
+  FileText,
+  Calendar,
+  Users,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Card } from "./ui/card";
+import { NotificationType } from "../types";
+import { formatRelativeTime } from "../lib/utils";
+import { useNotifications } from "@/hooks";
+
+
 
 export function NotificationPanel() {
-  const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const {
+    refetch,
+    notifications,
+    loading,
+    // error,
+    markAllAsRead,
+    markAsRead,
+    unreadCount,
+  } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      const userNotifications = getNotifications(user.id);
-      setNotifications(userNotifications);
-    }
-  }, [user]);
+  
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+   useEffect(() => {
+      refetch();
+  }, []);
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  
+
+  const getNotificationIcon = (type?: NotificationType) => {
     switch (type) {
-      case 'COMMENT':
+      case "COMMENT":
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
-      case 'REQUEST':
+      case "REQUEST":
         return <UserPlus className="h-4 w-4 text-purple-500" />;
-      case 'SUBMISSION':
+      case "SUBMISSION":
         return <FileText className="h-4 w-4 text-green-500" />;
-      case 'MILESTONE':
+      case "MILESTONE":
         return <Calendar className="h-4 w-4 text-orange-500" />;
-      case 'GROUP':
+      case "GROUP":
         return <Users className="h-4 w-4 text-indigo-500" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
-  };
-
-  const markAsRead = (id: string) => {
-    const allNotifications = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
-    const updated = allNotifications.map((n: Notification) =>
-      n.id === id ? { ...n, isRead: true } : n
-    );
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(updated));
-    setNotifications(getNotifications(user!.id));
-  };
-
-  const markAllAsRead = () => {
-    const allNotifications = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || '[]');
-    const updated = allNotifications.map((n: Notification) =>
-      n.userId === user!.id ? { ...n, isRead: true } : n
-    );
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(updated));
-    setNotifications(getNotifications(user!.id));
   };
 
   return (
@@ -62,7 +58,10 @@ export function NotificationPanel() {
       <Button
         variant="ghost"
         size="icon"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          
+        }}
         className="relative"
       >
         <Bell className="h-5 w-5" />
@@ -89,7 +88,11 @@ export function NotificationPanel() {
               )}
             </div>
             <div className="divide-y divide-gray-200">
-              {notifications.length === 0 ? (
+              {loading ? (
+                <div className="p-8 text-center text-gray-500">
+                  <span>Please wait...</span>
+                </div>
+              ) : notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <Bell className="h-12 w-12 mx-auto mb-2 opacity-20" />
                   <p>No notifications</p>
@@ -99,21 +102,23 @@ export function NotificationPanel() {
                   <div
                     key={notification.id}
                     className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                      !notification.isRead ? 'bg-blue-50' : ''
+                      !notification.seen ? "bg-blue-50" : ""
                     }`}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => markAsRead(notification.id.toString())}
                   >
                     <div className="flex gap-3">
                       <div className="mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm">{notification.content}</p>
+                        <p className="text-sm">{notification.message}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {formatRelativeTime(notification.createdAt)}
+                          {formatRelativeTime(
+                            notification.createdAt.toString()
+                          )}
                         </p>
                       </div>
-                      {!notification.isRead && (
+                      {!notification.seen && (
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1" />
                       )}
                     </div>
@@ -127,4 +132,3 @@ export function NotificationPanel() {
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Shield, Users } from 'lucide-react';
 import { DashboardHeader } from './DashboardHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -9,6 +9,8 @@ import { Input } from './ui/input';
 import { mockUsersForAdmin, getGroups, getProjects, getRequests } from '../services/mockData';
 import { formatDate } from '../lib/utils';
 import { User } from '../types';
+import axios from 'axios';
+// import axios from 'axios';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -23,6 +25,19 @@ function AdminDashboard() {
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+
+  useEffect(()=>{
+    axios.get('https://backend-f2f3.onrender.com/admin-dashboard',{
+      headers:{
+        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwiaWF0IjoxNzYxNDAyMjAwLCJleHAiOjE3NjIwMDcwMDB9.H9LJ3ZfXDPbuk2acbEQafbLXC5mX1wBb8xkT1JTTw7Q`
+      }
+    }).then((res)=>{
+      console.log(res.data.data);
+    }).catch((err)=>{
+      console.log(err);
+    });
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">

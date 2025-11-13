@@ -1,9 +1,9 @@
-import { LogOut } from 'lucide-react';
-import { Button } from './ui/button';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { NotificationPanel } from './NotificationPanel';
-import { Avatar } from './ui/avatar';
+import { LogOut } from "lucide-react";
+import { Button } from "./ui/button";
+import { useAuth as AuthContext } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { NotificationPanel } from "./NotificationPanel";
+import { Avatar } from "./ui/avatar";
 
 interface DashboardHeaderProps {
   title: string;
@@ -11,12 +11,12 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, icon }: DashboardHeaderProps) {
-  const { user, logout } = useAuth();
+  const { user ,logout} = AuthContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -45,4 +45,3 @@ export function DashboardHeader({ title, icon }: DashboardHeaderProps) {
     </header>
   );
 }
-

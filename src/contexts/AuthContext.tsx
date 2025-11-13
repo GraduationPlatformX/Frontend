@@ -1,103 +1,119 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../types';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+} from "react";
+import { User } from "../types";
+import axios from "axios";
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, role: 'STUDENT' | 'SUPERVISOR' | 'ADMIN') => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  error: string | null;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'student@test.com',
-    role: 'STUDENT',
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Dr. Sarah Smith',
-    email: 'supervisor@test.com',
-    role: 'SUPERVISOR',
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Admin User',
-    email: 'admin@test.com',
-    role: 'ADMIN',
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString(),
-  },
-];
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [user, setUser] = useState<any>(() => {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>("failed");
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    // Load user from localStorage on mount
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
     // Simple mock authentication - password is just 'password' for all demo accounts
-    if (password !== 'password') {
-      return false;
-    }
+    let success = true;
+    await axios
+      .post(`${import.meta.env.VITE_API_URL}/auth/signin`, {
+        email: email,
+        password: password,
+      })
+      .then((response) => {
+        setUser(response.data.data.user);
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+        localStorage.setItem(
+          "access_token",
+          response.data.data.access_token
+        );
+      })
+      .catch((e) => {
+        console.log(e);
+        setError(e.response?.data?.message || "Login failed");
+        success = false;
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
-    const foundUser = mockUsers.find(u => u.email === email);
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('user', JSON.stringify(foundUser));
-      return true;
-    }
-    return false;
+    return success;
   };
 
   const register = async (
     name: string,
     email: string,
-    _password: string,
-    role: 'STUDENT' | 'SUPERVISOR' | 'ADMIN'
+    _password: string
   ): Promise<boolean> => {
     // Check if user already exists
-    if (mockUsers.find(u => u.email === email)) {
-      return false;
-    }
+    setLoading(true);
+    setError(null);
+    let success = true;
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      role,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-    };
-
-    mockUsers.push(newUser);
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    return true;
+    await axios
+      .post(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+        name: name,
+        email: email,
+        password: _password,
+        role: "STUDENT",
+      })
+      .then((response) => {
+        setUser(response.data.data.user);
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+        localStorage.setItem(
+          "access_token",
+          response.data.data.access_token
+        );
+      })
+      .catch((e) => {
+        console.log(e);
+        setError(e.response?.data?.message || "Login failed");
+        success = false;
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+    return success;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
+    localStorage.removeItem("access_token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!user,
+        error,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -106,8 +122,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
-

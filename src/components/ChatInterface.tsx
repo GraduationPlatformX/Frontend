@@ -1,56 +1,55 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Avatar } from './ui/avatar';
-import { useAuth } from '../contexts/AuthContext';
-import { getMessages, STORAGE_KEYS } from '../services/mockData';
-import { Message } from '../types';
-import { formatTime } from '../lib/utils';
+import { useState, useEffect, useRef } from "react";
+import { Send } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Avatar } from "./ui/avatar";
+import { useAuth } from "../contexts/AuthContext";
+import { GroupChatMessage } from "../types";
+import { formatTime } from "../lib/utils";
+import { useMessages } from "@/hooks";
 
 interface ChatInterfaceProps {
-  groupId: string;
+  groupId: number;
+  chatId?: number;
 }
 
-export function ChatInterface({ groupId }: ChatInterfaceProps) {
+export function ChatInterface({ groupId, chatId }: ChatInterfaceProps) {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+
+  const { messages, getMessages, sendMessage, setMessages } = useMessages(
+    groupId,
+    chatId
+  );
+  const initialMessage: GroupChatMessage = {
+    id: Math.random() * 100,
+    senderId: user?.id!,
+    sender: user!,
+    content: "",
+    chatId: chatId!,
+  } as GroupChatMessage;
+  const [newMessage, setNewMessage] =
+    useState<GroupChatMessage>(initialMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const groupMessages = getMessages(groupId);
-    setMessages(groupMessages);
-  }, [groupId]);
+    getMessages();
+  }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage?.content?.trim() || !user) return;
+    setMessages((prev) => [...prev, newMessage]);
+    setNewMessage(initialMessage);
 
-    const message: Message = {
-      id: `msg${Date.now()}`,
-      groupId,
-      senderId: user.id,
-      senderName: user.name,
-      content: newMessage,
-      timestamp: new Date().toISOString(),
-      isRead: false,
-    };
-
-    const allMessages = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
-    const updated = [...allMessages, message];
-    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(updated));
-    
-    setMessages([...messages, message]);
-    setNewMessage('');
+    sendMessage(newMessage);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -61,31 +60,33 @@ export function ChatInterface({ groupId }: ChatInterfaceProps) {
       <CardHeader className="border-b">
         <CardTitle>Group Chat</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="h-[100%] flex-1 flex flex-col p-0">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => {
+          {messages.map((message: GroupChatMessage) => {
             const isOwnMessage = message.senderId === user?.id;
             return (
               <div
                 key={message.id}
-                className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+                className={`flex gap-3 ${
+                  isOwnMessage ? "flex-row-reverse" : ""
+                }`}
               >
-                <Avatar name={message.senderName} />
-                <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
+                <Avatar name={message.sender.name} />
+                <div className={`flex-1 ${isOwnMessage ? "text-right" : ""}`}>
                   <div
                     className={`inline-block px-4 py-2 rounded-lg ${
                       isOwnMessage
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-900'
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-900"
                     }`}
                   >
                     <p className="text-sm font-medium mb-1">
-                      {isOwnMessage ? 'You' : message.senderName}
+                      {isOwnMessage ? "You" : message.sender.name}
                     </p>
                     <p className="text-sm">{message.content}</p>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {formatTime(message.timestamp)}
+                    {formatTime(message.createdAt.toString())}
                   </p>
                 </div>
               </div>
@@ -97,11 +98,21 @@ export function ChatInterface({ groupId }: ChatInterfaceProps) {
           <div className="flex gap-2">
             <Input
               placeholder="Type a message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              value={newMessage.content}
+              onChange={(e) => {
+                setNewMessage({
+                  ...newMessage,
+                  content: e.target.value,
+                  createdAt: new Date(),
+                });
+              }}
               onKeyPress={handleKeyPress}
             />
-            <Button onClick={handleSendMessage}>
+            <Button
+              onClick={() => {
+                handleSendMessage();
+              }}
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>
@@ -110,4 +121,3 @@ export function ChatInterface({ groupId }: ChatInterfaceProps) {
     </Card>
   );
 }
-

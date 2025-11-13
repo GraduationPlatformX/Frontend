@@ -2,13 +2,19 @@ import { CheckCircle2, Circle, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Project } from '../types';
 import { formatDate } from '../lib/utils';
+import { Project } from '@/types';
+import { getProjectProgress } from '@/Helpers';
 
 interface ProjectViewProps {
   project: Project;
 }
 
+
+//   PENDING = "PENDING",
+//   SUBMITTED = "SUBMITTED",
+//   REVIEWED = "REVIEWED",
+//   COMPLETED = "COMPLETED",
 export function ProjectView({ project }: ProjectViewProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -45,10 +51,10 @@ export function ProjectView({ project }: ProjectViewProps) {
               {project.status}
             </Badge>
             <span className="text-sm text-gray-500">
-              Progress: {project.progress}%
+              Progress: {getProjectProgress(project?.milestones)}%
             </span>
           </div>
-          <Progress value={project.progress} />
+          <Progress value={getProjectProgress(project?.milestones)} />
         </CardContent>
       </Card>
 
@@ -64,7 +70,7 @@ export function ProjectView({ project }: ProjectViewProps) {
             {project.milestones.map((milestone, index) => (
               <div key={milestone.id} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  {getStatusIcon(milestone.status)}
+                  {getStatusIcon("IN_PROGRESS")}
                   {index < project.milestones.length - 1 && (
                     <div className="w-[2px] h-12 bg-gray-200 mt-2" />
                   )}
@@ -82,8 +88,8 @@ export function ProjectView({ project }: ProjectViewProps) {
                     </Badge>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                    <span>Due: {formatDate(milestone.dueDate)}</span>
-                    {milestone.hasSubmission && (
+                    <span>Due: {formatDate(milestone.deadline?.toString() || "")}</span>
+                    {milestone.submissions && (
                       <Badge variant="outline" className="text-xs">
                         Submitted
                       </Badge>

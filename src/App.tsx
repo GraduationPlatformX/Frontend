@@ -6,6 +6,7 @@ import Login from './components/Login';
 import StudentDashboard from './components/StudentDashboard';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import { useEffect } from 'react';
 
 // Initialize mock data
 initializeMockData();
@@ -33,6 +34,12 @@ function RoleBasedRoute() {
 }
 
 function App() {
+  useEffect(() => {
+    const user  = localStorage.getItem("user");
+    if (user && window.location.pathname === "/login") {
+      window.location.href = "/dashboard";
+    }
+  });
   return (
     <AuthProvider>
       <Router>

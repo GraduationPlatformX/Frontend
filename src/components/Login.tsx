@@ -5,8 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
-import { Select } from './ui/select';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Loader } from 'lucide-react';
 import { toast } from 'sonner';
 
 function Login() {
@@ -15,7 +14,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'STUDENT' | 'SUPERVISOR' | 'ADMIN'>('STUDENT');
-  const { login, register } = useAuth();
+  const { login, register,loading,error } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,14 +26,14 @@ function Login() {
         toast.success('Login successful!');
         navigate('/dashboard');
       } else {
-        toast.error('Invalid credentials');
+        toast.error(error);
       }
     } else {
       if (!name || !email || !password) {
-        toast.error('Please fill all fields');
+        toast.error(error);
         return;
       }
-      const success = await register(name, email, password, role);
+      const success = await register(name, email, password);
       if (success) {
         toast.success('Registration successful!');
         navigate('/dashboard');
@@ -69,23 +68,10 @@ function Login() {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required={!isLogin}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select
-                    id="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as 'STUDENT' | 'SUPERVISOR' | 'ADMIN')}
-                  >
-                    <option value="STUDENT">Student</option>
-                    <option value="SUPERVISOR">Supervisor</option>
-                    <option value="ADMIN">Admin</option>
-                  </Select>
                 </div>
               </>
             )}
@@ -94,7 +80,6 @@ function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="student@test.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -105,14 +90,13 @@ function Login() {
               <Input
                 id="password"
                 type="password"
-                placeholder="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              {isLogin ? 'Sign In' : 'Sign Up'}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? <><Loader size={16} className='mx-1'/> Loading... </>: isLogin ? 'Sign In' : 'Sign Up'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
@@ -126,14 +110,6 @@ function Login() {
                 : 'Already have an account? Sign in'}
             </button>
           </div>
-          {isLogin && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600 mb-2 font-semibold">Demo Accounts:</p>
-              <p className="text-xs text-gray-600">student@test.com / password</p>
-              <p className="text-xs text-gray-600">supervisor@test.com / password</p>
-              <p className="text-xs text-gray-600">admin@test.com / password</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

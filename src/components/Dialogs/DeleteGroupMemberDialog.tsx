@@ -6,11 +6,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-import { Button } from "./ui/button";
+} from "../ui/dialog";
+import { Button } from "../ui/button";
 import { useDelete } from "@/hooks";
 import { toast } from "sonner";
 import { Group } from "@/types";
+import { useDashboardData } from "@/contexts/DashboardDataContext";
 
 export function DeleteGroupMemberDialog({
   group,
@@ -18,9 +19,12 @@ export function DeleteGroupMemberDialog({
   open,
   onOpenChange,
 }: {group: Group; userId: number; open: boolean; onOpenChange: (open: boolean) => void}) {
+  const {execute:refreshDashboardData} = useDashboardData()
+  
   const { loading, execute } = useDelete(`groups/${group?.id}/members/${userId}`, {
     onSuccess: () => {
       toast.success("Member removed successfully");
+      refreshDashboardData();
       onOpenChange(false);
 
     },

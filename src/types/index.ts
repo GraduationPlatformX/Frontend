@@ -126,7 +126,7 @@ export interface GroupChat {
 }
 
 export interface GroupChatMessage {
-  id: number;
+  id: string;
   chatId: number;
   senderId: number;
   content?: string;
@@ -186,7 +186,7 @@ export interface Submission {
   submittedBy: number;
   fileUrl: string;
   status: SubmissionStatus;
-  notes?: string[];
+  feedback?: string[];
   grade?: number;
   submittedAt: Date;
   createdAt: Date;

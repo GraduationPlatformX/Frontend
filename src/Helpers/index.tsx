@@ -7,7 +7,10 @@ import {
   MilestoneStatus,
   NotificationType,
   SubmissionStatus,
-  Milestone, Submission
+  Milestone, Submission,
+  SupervisorRequest,
+  Group,
+  Project
 } from "@/types"; // adjust path if needed
 
 type BadgeVariant = "default" | "secondary" | "success" | "error" | "warning" | "outline" | undefined;
@@ -56,7 +59,7 @@ export function getBadgeVariant(value: string): BadgeVariant {
     case ProjectStatus.REJECTED:
       return "error";
     case ProjectStatus.COMPLETED:
-      return "secondary";
+      return "success";
 
     // Milestone Status
     case MilestoneStatus.PENDING:
@@ -118,3 +121,51 @@ export const getProjectProgress = (milestones: Milestone[]) => {
   ).length;
   return Math.round((completedMilestones / totalMilestones) * 100);
 };
+
+
+  export const getRequestsByStatus = (
+    requests: SupervisorRequest[],
+    status: RequestStatus = RequestStatus.PENDING
+  ) => {
+    return requests.filter((request) => request.status === status).length;
+  };
+
+  export const getProjectsByStatus = (groups: Group[],status:ProjectStatus = ProjectStatus.APPROVED) => {
+    if(!groups) return []
+    
+    return groups?.filter(group => {
+      group.project?.status === status
+    })
+  };
+
+
+  
+
+  export const getTotalStudentsCount = (groups: Group[]) => {
+    return groups?.reduce((total, group) => total + (group.members?.length || 0), 0) || 0;
+  };
+
+  export const getReviewsNeededCount = (groups: Group[]) => {
+    return groups?.reduce((count, group) => {
+      const milestonesNeedingReview = group.project?.milestones?.filter(
+        (m) => m.status === MilestoneStatus.SUBMITTED && 
+               m.submissions?.every((s) => !s.feedback)
+      ).length || 0;
+      return count + milestonesNeedingReview;
+    }, 0) || 0;
+  };
+
+
+ export const getGroupProjects = (groups:Group[]) : Project[] => {
+    return groups.flatMap(group => group.project || []);
+  }
+
+  //   let projects :Project[]= []  
+  //  groups.map(group =>{
+  //   if(group?.project)
+  //     projects.push(group.project)
+  //  });
+
+  //  console.log("projects :",projects);
+   
+  //  return projects

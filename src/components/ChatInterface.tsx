@@ -17,12 +17,12 @@ interface ChatInterfaceProps {
 export function ChatInterface({ groupId, chatId }: ChatInterfaceProps) {
   const { user } = useAuth();
 
-  const { messages, getMessages, sendMessage, setMessages } = useMessages(
+  const { messages, getMessages, sendMessage, setMessages, loadMore, hasMore, loading } = useMessages(
     groupId,
     chatId
   );
   const initialMessage: GroupChatMessage = {
-    id: Math.random() * 100,
+    id: "temp-" + Date.now(), // Use a unique string for temp messages
     senderId: user?.id!,
     sender: user!,
     content: "",
@@ -30,15 +30,27 @@ export function ChatInterface({ groupId, chatId }: ChatInterfaceProps) {
   } as GroupChatMessage;
   const [newMessage, setNewMessage] =
     useState<GroupChatMessage>(initialMessage);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getMessages();
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (isInitialLoad && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setIsInitialLoad(false);
+    }
+  }, [messages, isInitialLoad]);
+
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (container && container.scrollTop === 0 && hasMore && !loading) {
+      loadMore();
+    }
+  };
 
   const handleSendMessage = () => {
     if (!newMessage?.content?.trim() || !user) return;
@@ -61,15 +73,16 @@ export function ChatInterface({ groupId, chatId }: ChatInterfaceProps) {
         <CardTitle>Group Chat</CardTitle>
       </CardHeader>
       <CardContent className="h-[100%] flex-1 flex flex-col p-0">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={messagesContainerRef} onScroll={handleScroll}>
+          {loading && <div className="text-center text-xs text-gray-500">Loading...</div>}
           {messages.map((message: GroupChatMessage) => {
             const isOwnMessage = message.senderId === user?.id;
+            // Use string key for temp messages, number for real ones
+            const key = typeof message.id === "string" ? message.id : `msg-${message.id}`;
             return (
               <div
-                key={message.id}
-                className={`flex gap-3 ${
-                  isOwnMessage ? "flex-row-reverse" : ""
-                }`}
+                key={key}
+                className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
               >
                 <Avatar name={message.sender.name} />
                 <div className={`flex-1 ${isOwnMessage ? "text-right" : ""}`}>

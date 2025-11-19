@@ -12,14 +12,18 @@ import { toast } from "sonner";
 import { usePost } from "@/hooks";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { useDashboardData } from "@/contexts/DashboardDataContext";
 
 export function JoinGroupByCodeDialog({ open, onOpenChange }: any) {
+  const { execute: refreshDashboardData } = useDashboardData();
+
   const [inviteCode, setInviteCode] = useState("");
   const { loading, execute } = usePost(`groups/join`, {
     onSuccess: () => {
+      toast.success("Joined group successfully");
+      refreshDashboardData();
       onOpenChange(false);
       setInviteCode("");
-      window.location.href = "/dashboard";
     },
     onError: (errMsg: string) => {
       toast.error(errMsg);

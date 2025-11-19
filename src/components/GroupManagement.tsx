@@ -13,7 +13,7 @@ import { Badge } from "./ui/badge";
 import { Avatar } from "./ui/avatar";
 import { useAuth } from "../contexts/AuthContext";
 import { Group, GroupMember } from "@/types";
-import { DeleteGroupMemberDialog } from "./DeleteGroupMemberDialog";
+import { DeleteGroupMemberDialog } from "./Dialogs/DeleteGroupMemberDialog";
 import { InviteGroupMemberDialog } from "./Dialogs/InviteGroupMemberDialog";
 import { JoinGroupByCodeDialog } from "./Dialogs/JoinGroupByCodeDialog";
 import { CreateGroupDialog } from "./Dialogs/CreateGroupDialog";
@@ -28,6 +28,7 @@ export function GroupManagement({
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
 
   if (!userGroup) {
     return (

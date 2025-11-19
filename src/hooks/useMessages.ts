@@ -3,11 +3,13 @@ import { api, supabase } from "../services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { GroupChatMessage } from "@/types";
 
-export function useMessages(groupId: number,chatId?:number) {
+export function useMessages(groupId: number, chatId?: number) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<GroupChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const channel = supabase
@@ -22,14 +24,14 @@ export function useMessages(groupId: number,chatId?:number) {
         },
         async (payload: any) => {
           const msg = payload.new as GroupChatMessage;
-          
-           if(user?.id !== msg.senderId){
+
+          if (user?.id !== msg.senderId) {
             const { data: sender } = await supabase
               .from("users")
               .select("id, name, email, role, createdAt, updatedAt")
               .eq("id", msg.senderId)
               .single();
-              
+
             setMessages((prev: any) => [
               ...prev,
               { ...msg, sender }, // attach sender info
@@ -44,23 +46,42 @@ export function useMessages(groupId: number,chatId?:number) {
     };
   }, []);
 
-  const getMessages = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const getMessages = useCallback(
+    async (nextPage?: number) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await api.get<any>(`groups/${groupId}/messages?limit=${10}&page=${1}`);
-      setMessages(response.data.data.messages);
-      return response.data.data;
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to fetch messages";
-      setError(errorMessage);
-      return [];
-    } finally {
-      setLoading(false);
+      try {
+        const currentPage = nextPage ?? page;
+        const response = await api.get<any>(
+          `groups/${groupId}/messages?limit=${10}&page=${currentPage}`
+        );
+        const newMessages = response.data.data.messages;
+        if (newMessages.length < 10) setHasMore(false);
+
+        setMessages((prev) =>
+          currentPage === 1 ? newMessages : [...newMessages, ...prev]
+        );
+        setPage(currentPage);
+        return response.data.data;
+      } catch (err: any) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to fetch messages";
+        setError(errorMessage);
+        setHasMore(false);
+        return [];
+      } finally {
+        setLoading(false);
+      }
+    },
+    [groupId, page]
+  );
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      getMessages(page + 1);
     }
-  }, [groupId]);
+  }, [hasMore, loading, page, getMessages]);
 
   const sendMessage = useCallback(
     async (message: GroupChatMessage) => {
@@ -72,7 +93,7 @@ export function useMessages(groupId: number,chatId?:number) {
           success: boolean;
           data: GroupChatMessage;
         }>(`/groups/${groupId}/messages`, {
-          content:message?.content,
+          content: message?.content,
         });
         const newMessage = response.data.data;
         return newMessage;
@@ -95,5 +116,7 @@ export function useMessages(groupId: number,chatId?:number) {
     getMessages,
     sendMessage,
     setMessages,
+    loadMore,
+    hasMore,
   };
 }

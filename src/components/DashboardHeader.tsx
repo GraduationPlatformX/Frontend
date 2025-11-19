@@ -1,7 +1,7 @@
 import { LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth as AuthContext } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { NotificationPanel } from "./NotificationPanel";
 import { Avatar } from "./ui/avatar";
 
@@ -24,7 +24,7 @@ export function DashboardHeader({ title, icon }: DashboardHeaderProps) {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {icon}
+            <Link to={"/dashboard"}>{icon}</Link>
             <div>
               <h1 className="text-xl font-semibold">{title}</h1>
               <p className="text-sm text-gray-500">

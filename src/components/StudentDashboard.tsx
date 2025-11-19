@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   GraduationCap,
   FolderKanban,
   FileUp,
   MessageSquare,
+  UserPlus,
+  PlusSquare,
+  Plus,
 } from "lucide-react";
 import { DashboardHeader } from "./DashboardHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -16,23 +19,25 @@ import { ProjectView } from "./ProjectView";
 import { ChatInterface } from "./ChatInterface";
 import { SubmissionUpload } from "./SubmissionUpload";
 import { SupervisorRequestForm } from "./Dialogs/SupervisorRequestForm";
-import { useGet } from "@/hooks";
-import { Group, Submission } from "@/types";
+import { Milestone, Submission } from "@/types";
 import Loader from "./ui/Loader";
-import { getBadgeVariant, getLastSubmissions, getProjectProgress } from "@/Helpers";
+import {
+  getBadgeVariant,
+  getLastSubmissions,
+  getProjectProgress,
+} from "@/Helpers";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDashboardData } from "@/contexts/DashboardDataContext";
+import { CreateProjectDialog } from "./Dialogs/CreateProjectDialog";
 
 function StudentDashboard() {
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const { data: userGroup, loading } = useGet<Group>("/student-dashboard", {
-    immediate: true,
-  });
+  const [isCreateProjectDialogeOpen, setIsCreateProjectDialogeOpen] =
+    useState(false);
 
-  
-
- 
+  const { data: userGroup, loading } = useDashboardData();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,8 +46,8 @@ function StudentDashboard() {
         icon={<GraduationCap className="h-6 w-6 text-primary" />}
       />
       {loading ? (
-        <div className="p-8 flex items-center justify-center text-gray-500">
-          <Loader />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader/>
         </div>
       ) : (
         <div className="container mx-auto px-4 py-6">
@@ -64,7 +69,10 @@ function StudentDashboard() {
                   <CardContent>
                     {userGroup ? (
                       <div>
-                        <Badge variant={getBadgeVariant(userGroup.status)} className="mb-2">
+                        <Badge
+                          variant={getBadgeVariant(userGroup.status)}
+                          className="mb-2"
+                        >
                           {userGroup.status}
                         </Badge>
                         <p className="text-sm text-gray-600">
@@ -88,13 +96,20 @@ function StudentDashboard() {
                     {userGroup?.project ? (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{getProjectProgress(userGroup?.project?.milestones)}%</span>
+                          <span className="text-sm font-medium">
+                            {getProjectProgress(userGroup?.project?.milestones)}
+                            %
+                          </span>
                         </div>
-                        <Progress value={getProjectProgress(userGroup?.project?.milestones)} />
+                        <Progress
+                          value={getProjectProgress(
+                            userGroup?.project?.milestones
+                          )}
+                        />
                         <p className="text-xs text-gray-500 mt-2">
                           {
                             userGroup?.project.milestones.filter(
-                              (m) => m.status === "COMPLETED"
+                              (m: Milestone) => m.status === "COMPLETED"
                             ).length
                           }{" "}
                           of {userGroup?.project.milestones.length} milestones
@@ -143,7 +158,7 @@ function StudentDashboard() {
                   <div className="space-y-4">
                     {userGroup?.project?.milestones ? (
                       getLastSubmissions(userGroup?.project?.milestones).map(
-                        (submission : Submission) => (
+                        (submission: Submission) => (
                           <div
                             key={submission.id}
                             className="flex items-center gap-3"
@@ -164,11 +179,7 @@ function StudentDashboard() {
                                 ).toLocaleDateString()}
                               </p>
                             </div>
-                            <Badge
-                              variant={
-                               getBadgeVariant(submission.status)
-                              }
-                            >
+                            <Badge variant={getBadgeVariant(submission.status)}>
                               {submission.status}
                             </Badge>
                           </div>
@@ -192,20 +203,50 @@ function StudentDashboard() {
               {userGroup?.project ? (
                 <ProjectView project={userGroup?.project} />
               ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <FolderKanban className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-gray-500">No project found</p>
-                    <p className="text-sm text-gray-400 mt-2">
-                      Create a group and request a supervisor to get started
-                    </p>
-                  </CardContent>
-                </Card>
+                <>
+                  <Button
+                    onClick={() => {
+                      setIsCreateProjectDialogeOpen(true);
+                    }}
+                    className="mb-4"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Project
+                  </Button>
+                  <CreateProjectDialog
+                    onChange={setIsCreateProjectDialogeOpen}
+                    open={isCreateProjectDialogeOpen}
+                  />
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <FolderKanban className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-500">No project found</p>
+                      {/* {user?.id === userGroup.createdById && (
+                        <p className="text-sm text-gray-400 mt-2">
+                          {userGroup
+                            ? "Create a project to start"
+                            : "Create a group and request a supervisor to get started"}
+                        </p>
+                      )} */}
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </TabsContent>
 
             <TabsContent value="submissions" className="mt-6">
-              <SubmissionUpload group={userGroup || undefined} />
+              {userGroup?.project?.milestones.length ? (
+                <SubmissionUpload group={userGroup || undefined} />
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-gray-500">No Submissions</p>
+                    <p className="text-gray-500">
+                      Milestones submission's will appear in this area
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="chat" className="mt-6">

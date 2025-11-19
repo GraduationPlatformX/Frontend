@@ -43,7 +43,6 @@ export function useApi<T = any>(
       try {
         const response = await apiCall(...args);
         const result = response.data.data;
-
         setData(result);
         
         if (onSuccess) onSuccess(result);
